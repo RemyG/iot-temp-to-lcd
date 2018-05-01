@@ -1,9 +1,16 @@
+
 #include <LiquidCrystal_I2C.h>
 #include <DallasTemperature.h>
 #include <OneWire.h>
 
-// Data wire is plugged into pin D3 on the ESP8266 - GPIO 0
-#define ONE_WIRE_BUS 0
+// Data wire is plugged into pin D3 on the ESP8266
+#define ONE_WIRE_BUS D3
+
+// LCD pins
+#define SDA_PIN D4
+#define SCL_PIN D5
+
+#define TEMP_SIZE 7
 
 // Setup a oneWire instance to communicate with any OneWire devices
 OneWire oneWire(ONE_WIRE_BUS);
@@ -11,8 +18,8 @@ OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature DS18B20(&oneWire);
 
-char temperatureCString[7];
-char previousTemp[7] = "init";
+char temperatureCString[TEMP_SIZE];
+char previousTemp[TEMP_SIZE] = "init";
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
@@ -20,7 +27,7 @@ void setup() {
 
   Serial.begin(115200);
 
-  Wire.begin(D4,D5);
+  Wire.begin(SDA_PIN, SCL_PIN);
   
   lcd.init();
   lcd.backlight();
@@ -29,39 +36,39 @@ void setup() {
   lcd.setCursor(5, 1);
   lcd.print("WORLD");
   
-  delay(10);
+  delay(2000);
 
   DS18B20.begin();
 
   lcd.clear();
-  
   lcd.setCursor(0, 0);
-  lcd.print("Temperature:");
+  lcd.print("Temp.:");
 }
 
 void getTemperature() {
+
   float tempC;
-  float tempF;
   do {
     DS18B20.requestTemperatures();
     tempC = DS18B20.getTempCByIndex(0);
     dtostrf(tempC, 3, 1, temperatureCString);
-    delay(100);
+    if (tempC == (-127)) {
+      delay(100);
+    }
   } while (tempC == (-127.0));
 }
 
 void loop() {
-  
+
   getTemperature();
 
   Serial.println(temperatureCString);
-  Serial.println(previousTemp);
 
   if (strcmp(previousTemp,temperatureCString) != 0) {
-    lcd.setCursor(1, 1);
+    lcd.setCursor(7, 0);
     lcd.print(temperatureCString);
-    strncpy(previousTemp, temperatureCString, 7);
+    strncpy(previousTemp, temperatureCString, TEMP_SIZE);
   }
 
-  delay(10000);
+  delay(2000);
 }   
